@@ -1,0 +1,44 @@
+---
+title: "Building Model for Weight Lifting Exercise Manner Prediction"
+author: "A.Volkoviy"
+date: "22.11.2015"
+output: html_document
+---
+
+## Executive Summary
+
+Weight Lifting Exercise Dataset contains data from accelerometers on the belt, forearm, arm, and dumbell of 6 participants. These participants were asked to perform barbell lifts correctly and incorrectly in 5 different ways. More information is available from the website here: http://groupware.les.inf.puc-rio.br/har
+This report addesses the question to predict the manner in which they did the exercise
+
+## Preparation
+
+```{r}
+
+```
+
+## Loading and Preprocessing the Data
+
+The following R code is used for data loading .
+
+```{r}
+
+```
+
+## Preprocessing
+
+```{r}
+
+```
+
+
+## Building the model
+
+```{r}
+
+```
+
+## Prediction
+
+```{r}
+
+```
