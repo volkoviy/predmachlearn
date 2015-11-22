@@ -2,7 +2,7 @@
 
 This folder stores the results of Course Project performed within Practical Machine Learning course. 
 
-Particularly [R markdown](https://github.com/volkoviy/predmachlearn/PractML_cp.Rmd) and [compiled HTML](https://github.com/volkoviy/predmachlearn/PractML_cp.html) files describing the analysis.
+Particularly [R markdown](https://github.com/volkoviy/predmachlearn/blob/master/PractML_cp.Rmd) and [compiled HTML](http://volkoviy.github.io/) files describing the analysis.
 
 ## Assignment is the following
 

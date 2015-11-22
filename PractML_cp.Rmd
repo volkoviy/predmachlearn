@@ -5,40 +5,119 @@ date: "22.11.2015"
 output: html_document
 ---
 
+# Building Model for Weight Lifting Exercise Manner Prediction
+
 ## Executive Summary
 
 Weight Lifting Exercise Dataset contains data from accelerometers on the belt, forearm, arm, and dumbell of 6 participants. These participants were asked to perform barbell lifts correctly and incorrectly in 5 different ways. More information is available from the website here: http://groupware.les.inf.puc-rio.br/har
-This report addesses the question to predict the manner in which they did the exercise
 
-## Preparation
+This report addesses the problem of prediction the manner in which they did the exercise.
+
+## Preparation of environment
+
+Loading packages and seed setting
 
 ```{r}
-
+library(caret)
+library(rpart)
+library(randomForest)
+library(ElemStatLearn)
+set.seed(2015)
 ```
 
-## Loading and Preprocessing the Data
+## Loading the Data
 
-The following R code is used for data loading .
-
+The following R code is used for data loading:
 ```{r}
+trainUrl <-"https://d396qusza40orc.cloudfront.net/predmachlearn/pml-training.csv"
+testUrl <- "https://d396qusza40orc.cloudfront.net/predmachlearn/pml-testing.csv"
+trainFile <- "pml-training.csv"
+testFile  <- "pml-testing.csv"
+download.file(trainUrl, destfile=trainFile, method="wget")
+download.file(testUrl, destfile=testFile, method="wget")
+```
 
+Then we can read data from files:
+```{r}
+trainDat <- read.csv(trainFile)
+testDat <- read.csv(testFile)
+```
+
+## Exploratory Analysis
+
+Size of test set:
+```{r}
+dim(testDat)
+```
+
+Size of train set
+```{r}
+dim(trainDat)
+```
+And number of compleate cases are
+```{r}
+sum(complete.cases(trainDat))
+```
+
+Designations for exercise execution manners:
+```{r}
+unique(trainDat$classe, incomparables = FALSE)
 ```
 
 ## Preprocessing
 
+Data should be cleaned before usage.
 ```{r}
-
+trainDat <- trainDat[, colSums(is.na(trainDat)) == 0]
+testDat <- testDat[, colSums(is.na(testDat)) == 0]
+classe <- trainDat$classe
+trainRemove <- grepl("^X|timestamp|window", names(trainDat))
+trainDat <- trainDat[, !trainRemove]
+trainCleaned <- trainDat[, sapply(trainDat, is.numeric)]
+trainCleaned$classe <- classe
+testRemove <- grepl("^X|timestamp|window", names(testDat))
+testDat <- testDat[, !testRemove]
+testCleaned <- testDat[, sapply(testDat, is.numeric)]
 ```
 
+Then validation set should be separated from train set:
+```{r}
+inTrain <- createDataPartition(trainCleaned$classe, p=0.70, list=FALSE)
+trainSet <- trainCleaned[inTrain, ]
+validationSet <- trainCleaned[-inTrain, ]
+```
 
 ## Building the model
 
+Random Forest method is used for exercise manner prediction model 
 ```{r}
-
+myModel <- train(classe ~ ., method = "rf", data = trainSet, importance = TRUE, trControl = trainControl(method = "cv", number = 5))
 ```
+
+## Testing with the validation set
+
+Prediction on validation set and confusion matrix for model performance evaluation
+```{r}
+validPred <- predict(myModel, newdata=validationSet)
+confusionMatrix(validPred, validationSet$classe)
+```
+As we can see, that accuracy is 0.9929.
 
 ## Prediction
 
+Now we can use trained model for prediction on the test set
 ```{r}
+testingPred <- predict(myModel, newdata=testCleaned)
+```
 
+And store results to files as suggested in assignment submission instruction:
+```{r}
+write_files <- function(x) {
+        n <- length(x)
+        for (i in 1:n) {
+                filename <- paste0("problem_id_", i, ".txt")
+                write.table(x[i], file=filename, quote=FALSE, row.names=FALSE,col.names=FALSE)
+        }
+}
+write_files(testingPred)
 ```

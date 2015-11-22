@@ -58,25 +58,136 @@ if (window.hljs && document.readyState && document.readyState === "complete") {
 </div>
 
 
+<div id="building-model-for-weight-lifting-exercise-manner-prediction" class="section level1">
+<h1>Building Model for Weight Lifting Exercise Manner Prediction</h1>
 <div id="executive-summary" class="section level2">
 <h2>Executive Summary</h2>
-<p>Weight Lifting Exercise Dataset contains data from accelerometers on the belt, forearm, arm, and dumbell of 6 participants. These participants were asked to perform barbell lifts correctly and incorrectly in 5 different ways. More information is available from the website here: <a href="http://groupware.les.inf.puc-rio.br/har">http://groupware.les.inf.puc-rio.br/har</a> This report addesses the question to predict the manner in which they did the exercise</p>
+<p>Weight Lifting Exercise Dataset contains data from accelerometers on the belt, forearm, arm, and dumbell of 6 participants. These participants were asked to perform barbell lifts correctly and incorrectly in 5 different ways. More information is available from the website here: <a href="http://groupware.les.inf.puc-rio.br/har">http://groupware.les.inf.puc-rio.br/har</a></p>
+<p>This report addesses the problem of prediction the manner in which they did the exercise.</p>
 </div>
-<div id="preparation" class="section level2">
-<h2>Preparation</h2>
+<div id="preparation-of-environment" class="section level2">
+<h2>Preparation of environment</h2>
+<p>Loading packages and seed setting</p>
+<pre class="r"><code>library(caret)</code></pre>
+<pre><code>## Loading required package: lattice
+## Loading required package: ggplot2</code></pre>
+<pre class="r"><code>library(rpart)
+library(randomForest)</code></pre>
+<pre><code>## randomForest 4.6-12
+## Type rfNews() to see new features/changes/bug fixes.</code></pre>
+<pre class="r"><code>library(ElemStatLearn)</code></pre>
+<pre><code>## 
+## Attaching package: 'ElemStatLearn'
+## 
+## The following object is masked _by_ '.GlobalEnv':
+## 
+##     ozone</code></pre>
+<pre class="r"><code>set.seed(2015)</code></pre>
 </div>
-<div id="loading-and-preprocessing-the-data" class="section level2">
-<h2>Loading and Preprocessing the Data</h2>
-<p>The following R code is used for data loading .</p>
+<div id="loading-the-data" class="section level2">
+<h2>Loading the Data</h2>
+<p>The following R code is used for data loading:</p>
+<pre class="r"><code>trainUrl &lt;-&quot;https://d396qusza40orc.cloudfront.net/predmachlearn/pml-training.csv&quot;
+testUrl &lt;- &quot;https://d396qusza40orc.cloudfront.net/predmachlearn/pml-testing.csv&quot;
+trainFile &lt;- &quot;pml-training.csv&quot;
+testFile  &lt;- &quot;pml-testing.csv&quot;
+download.file(trainUrl, destfile=trainFile, method=&quot;wget&quot;)
+download.file(testUrl, destfile=testFile, method=&quot;wget&quot;)</code></pre>
+<p>Then we can read data from files:</p>
+<pre class="r"><code>trainDat &lt;- read.csv(trainFile)
+testDat &lt;- read.csv(testFile)</code></pre>
+</div>
+<div id="exploratory-analysis" class="section level2">
+<h2>Exploratory Analysis</h2>
+<p>Size of test set:</p>
+<pre class="r"><code>dim(testDat)</code></pre>
+<pre><code>## [1]  20 160</code></pre>
+<p>Size of train set</p>
+<pre class="r"><code>dim(trainDat)</code></pre>
+<pre><code>## [1] 19622   160</code></pre>
+<p>And number of compleate cases are</p>
+<pre class="r"><code>sum(complete.cases(trainDat))</code></pre>
+<pre><code>## [1] 406</code></pre>
+<p>Designations for exercise execution manners:</p>
+<pre class="r"><code>unique(trainDat$classe, incomparables = FALSE)</code></pre>
+<pre><code>## [1] A B C D E
+## Levels: A B C D E</code></pre>
 </div>
 <div id="preprocessing" class="section level2">
 <h2>Preprocessing</h2>
+<p>Data should be cleaned before usage.</p>
+<pre class="r"><code>trainDat &lt;- trainDat[, colSums(is.na(trainDat)) == 0]
+testDat &lt;- testDat[, colSums(is.na(testDat)) == 0]
+classe &lt;- trainDat$classe
+trainRemove &lt;- grepl(&quot;^X|timestamp|window&quot;, names(trainDat))
+trainDat &lt;- trainDat[, !trainRemove]
+trainCleaned &lt;- trainDat[, sapply(trainDat, is.numeric)]
+trainCleaned$classe &lt;- classe
+testRemove &lt;- grepl(&quot;^X|timestamp|window&quot;, names(testDat))
+testDat &lt;- testDat[, !testRemove]
+testCleaned &lt;- testDat[, sapply(testDat, is.numeric)]</code></pre>
+<p>Then validation set should be separated from train set:</p>
+<pre class="r"><code>inTrain &lt;- createDataPartition(trainCleaned$classe, p=0.70, list=FALSE)
+trainSet &lt;- trainCleaned[inTrain, ]
+validationSet &lt;- trainCleaned[-inTrain, ]</code></pre>
 </div>
 <div id="building-the-model" class="section level2">
 <h2>Building the model</h2>
+<p>Random Forest method is used for exercise manner prediction model</p>
+<pre class="r"><code>myModel &lt;- train(classe ~ ., method = &quot;rf&quot;, data = trainSet, importance = TRUE, trControl = trainControl(method = &quot;cv&quot;, number = 5))</code></pre>
+</div>
+<div id="testing-with-the-validation-set" class="section level2">
+<h2>Testing with the validation set</h2>
+<p>Prediction on validation set and confusion matrix for model performance evaluation</p>
+<pre class="r"><code>validPred &lt;- predict(myModel, newdata=validationSet)
+confusionMatrix(validPred, validationSet$classe)</code></pre>
+<pre><code>## Confusion Matrix and Statistics
+## 
+##           Reference
+## Prediction    A    B    C    D    E
+##          A 1669    9    0    0    0
+##          B    2 1126    3    0    0
+##          C    2    4 1017    6    4
+##          D    0    0    6  956    3
+##          E    1    0    0    2 1075
+## 
+## Overall Statistics
+##                                           
+##                Accuracy : 0.9929          
+##                  95% CI : (0.9904, 0.9949)
+##     No Information Rate : 0.2845          
+##     P-Value [Acc &gt; NIR] : &lt; 2.2e-16       
+##                                           
+##                   Kappa : 0.991           
+##  Mcnemar's Test P-Value : NA              
+## 
+## Statistics by Class:
+## 
+##                      Class: A Class: B Class: C Class: D Class: E
+## Sensitivity            0.9970   0.9886   0.9912   0.9917   0.9935
+## Specificity            0.9979   0.9989   0.9967   0.9982   0.9994
+## Pos Pred Value         0.9946   0.9956   0.9845   0.9907   0.9972
+## Neg Pred Value         0.9988   0.9973   0.9981   0.9984   0.9985
+## Prevalence             0.2845   0.1935   0.1743   0.1638   0.1839
+## Detection Rate         0.2836   0.1913   0.1728   0.1624   0.1827
+## Detection Prevalence   0.2851   0.1922   0.1755   0.1640   0.1832
+## Balanced Accuracy      0.9974   0.9938   0.9940   0.9949   0.9965</code></pre>
+<p>As we can see, that accuracy is 0.9929.</p>
 </div>
 <div id="prediction" class="section level2">
 <h2>Prediction</h2>
+<p>Now we can use trained model for prediction on the test set</p>
+<pre class="r"><code>testingPred &lt;- predict(myModel, newdata=testCleaned)</code></pre>
+<p>And store results to files as suggested in assignment submission instruction:</p>
+<pre class="r"><code>write_files &lt;- function(x) {
+        n &lt;- length(x)
+        for (i in 1:n) {
+                filename &lt;- paste0(&quot;problem_id_&quot;, i, &quot;.txt&quot;)
+                write.table(x[i], file=filename, quote=FALSE, row.names=FALSE,col.names=FALSE)
+        }
+}
+write_files(testingPred)</code></pre>
+</div>
 </div>
 
 
